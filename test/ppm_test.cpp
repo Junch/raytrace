@@ -1,6 +1,5 @@
-#include "color.h"
-#include "gtest/gtest.h"
-#include <iostream>
+#include "rtweekend.h"
+#include <gtest/gtest.h>
 #include <fstream>
 
 void ppm_example()
