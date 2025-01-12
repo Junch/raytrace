@@ -30,5 +30,5 @@ set (install_dir ${CMAKE_BINARY_DIR}/thirdparty)
 include_directories(${install_dir}/include)
 link_directories(${install_dir}/lib)
 
-# add_subdirectory(src)
+add_subdirectory(src)
 add_subdirectory(test)
