@@ -2,6 +2,8 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <functional>
+#include "sphere.h"
+#include "hittable_list.h"
 
 void render(std::function<color(const ray &)> ray_color, std::string filename)
 {
@@ -55,7 +57,7 @@ void render(std::function<color(const ray &)> ray_color, std::string filename)
 
 TEST(render, blue_white)
 {
-    auto ray_color = [](const ray &r)
+    auto ray_color = [](const ray &r) -> color
     {
         // blue-white gradient
         vec3 unit_direction = unit_vector(r.direction());
@@ -78,7 +80,7 @@ TEST(render, red_sphere)
         return (discriminant >= 0);
     };
 
-    auto ray_color = [&](const ray &r)
+    auto ray_color = [&](const ray &r) -> color
     {
         if (hit_sphere(point3(0, 0, -1), 0.5, r))
             return color(1, 0, 0);
@@ -110,7 +112,7 @@ TEST(render, colored_sphere)
         }
     };
 
-    auto ray_color = [&](const ray &r)
+    auto ray_color = [&](const ray &r) -> color
     {
         auto t = hit_sphere(point3(0, 0, -1), 0.5, r);
         if (t > 0.0)
@@ -147,7 +149,7 @@ TEST(render, colored_sphere_optimized)
         }
     };
 
-    auto ray_color = [&](const ray &r)
+    auto ray_color = [&](const ray &r) -> color
     {
         auto t = hit_sphere(point3(0, 0, -1), 0.5, r);
         if (t > 0.0)
@@ -162,4 +164,26 @@ TEST(render, colored_sphere_optimized)
     };
 
     render(ray_color, "colored_sphere_optimized.ppm");
+}
+
+TEST(render, two_sphere)
+{
+    hittable_list world;
+    world.add(make_shared<sphere>(point3(0, 0, -1), 0.5));
+    world.add(make_shared<sphere>(point3(0, -100.5, -1), 100));
+
+    auto ray_color = [&](const ray &r) -> color
+    {
+        hit_record rec;
+        if (world.hit(r, 0, infinity, rec))
+        {
+            return 0.5 * (rec.normal + color(1, 1, 1));
+        }
+
+        vec3 unit_direction = unit_vector(r.direction());
+        auto a = 0.5 * (unit_direction.y() + 1.0);
+        return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
+    };
+
+    render(ray_color, "two_sphere.ppm");
 }
