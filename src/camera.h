@@ -115,7 +115,7 @@ public:
         std::clog << "\rDone.                 \n";
     }
 
-private:
+protected:
     double pixel_samples_scale; // Color scale factor for a sum of pixel samples
 
     ray get_ray(int i, int j) const
@@ -141,14 +141,47 @@ private:
 class camera_diffused : public camera_sample
 {
 public:
-    color ray_color(const ray &r, const hittable &world) const override
+    int max_depth = 10;
+
+    void render(const hittable &world, std::string filename) override
     {
+        initialize();
+        pixel_samples_scale = 1.0 / samples_per_pixel;
+
+        std::ofstream outFile(filename);
+        outFile << "P3\n"
+                << image_width << ' ' << image_height << "\n255\n";
+
+        for (int j = 0; j < image_height; j++)
+        {
+            std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
+            for (int i = 0; i < image_width; i++)
+            {
+                color pixel_color(0, 0, 0);
+                for (int sample = 0; sample < samples_per_pixel; sample++)
+                {
+                    ray r = get_ray(i, j);
+                    pixel_color += ray_color2(r, world, max_depth);
+                }
+                write_color(outFile, pixel_samples_scale * pixel_color);
+            }
+        }
+
+        std::clog << "\rDone.                 \n";
+    }
+
+    color ray_color2(const ray &r, const hittable &world, int depth) const
+    {
+        // If we've exceeded the ray bounce limit, no more light is gathered.
+        if (depth <= 0)
+            return color(0,0,0);
+
         hit_record rec;
 
-        if (world.hit(r, interval(0, infinity), rec))
+        if (world.hit(r, interval(0.001, infinity), rec))
         {
             vec3 direction = random_on_hemisphere(rec.normal);
-            return 0.5 * ray_color(ray(rec.p, direction), world);
+            return 0.5 * ray_color2(ray(rec.p, direction), world, depth - 1);
         }
 
         vec3 unit_direction = unit_vector(r.direction());
