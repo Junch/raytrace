@@ -1,6 +1,7 @@
 #pragma once
 #include "color.h"
 #include "hittable.h"
+#include "material.h"
 #include <fstream>
 
 class camera
@@ -170,11 +171,11 @@ public:
         std::clog << "\rDone.                 \n";
     }
 
-    color ray_color2(const ray &r, const hittable &world, int depth) const
+    virtual color ray_color2(const ray &r, const hittable &world, int depth) const
     {
         // If we've exceeded the ray bounce limit, no more light is gathered.
         if (depth <= 0)
-            return color(0,0,0);
+            return color(0, 0, 0);
 
         hit_record rec;
 
@@ -183,6 +184,32 @@ public:
             // vec3 direction = random_on_hemisphere(rec.normal);
             vec3 direction = rec.normal + random_unit_vector();
             return 0.5 * ray_color2(ray(rec.p, direction), world, depth - 1);
+        }
+
+        vec3 unit_direction = unit_vector(r.direction());
+        auto a = 0.5 * (unit_direction.y() + 1.0);
+        return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
+    }
+};
+
+class camera_material : public camera_diffused
+{
+public:
+    color ray_color2(const ray &r, const hittable &world, int depth) const override
+    {
+        // If we've exceeded the ray bounce limit, no more light is gathered.
+        if (depth <= 0)
+            return color(0, 0, 0);
+
+        hit_record rec;
+
+        if (world.hit(r, interval(0.001, infinity), rec))
+        {
+            ray scattered;
+            color attenuation;
+            if (rec.mat->scatter(r, rec, attenuation, scattered))
+                return attenuation * ray_color2(scattered, world, depth - 1);
+            return color(0, 0, 0);
         }
 
         vec3 unit_direction = unit_vector(r.direction());
